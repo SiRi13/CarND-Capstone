@@ -1,7 +1,16 @@
 *.py[cod]
+*.h5
 
 build
 devel
 
 profile.tmp
 .idea
+
+test.py
+.DS_Store
+
+training_data/*
+capture/*
+
+test2.py
