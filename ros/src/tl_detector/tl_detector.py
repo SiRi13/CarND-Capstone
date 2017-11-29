@@ -15,21 +15,21 @@ import numpy as np
 
 from light_classification.tl_classifier import TLClassifier
 
-# TODO Remove? STATE_COUNT_THRESHOLD = 3
 MIN_VIS_DIST = 0.0
 MAX_VIS_DIST = 100.0
 
+
 class TLDetector(object):
     def __init__(self):
-        rospy.init_node('tl_detector', log_level=rospy.WARN)
+        rospy.init_node('tl_detector', log_level=rospy.DEBUG)
 
         self.pose = None
         self.waypoints = None
         self.camera_image = None
         self.lights = None
 
-        sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
+        rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
 
         '''
         /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
@@ -38,10 +38,14 @@ class TLDetector(object):
         simulator. When testing on the vehicle, the color state will not be available. You'll need to
         rely on the position of the light and the camera image to predict it.
         '''
-        sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
-        sub6 = rospy.Subscriber('/image_color', Image, self.image_cb)
+        rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
+        rospy.Subscriber('/image_color', Image, self.image_cb)
 
         config_string = rospy.get_param("/traffic_light_config")
+        model_path = rospy.get_param("~model_path", 'model_00.h5')
+
+        rospy.loginfo('using model path: {}'.format(model_path))
+
         self.config = yaml.load(config_string)
         self.stop_line_positions = self.config['stop_line_positions']
         self.stop_line_waypoints = []
@@ -50,7 +54,7 @@ class TLDetector(object):
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
 
         self.bridge = CvBridge()
-        self.light_classifier = TLClassifier()
+        self.light_classifier = TLClassifier(model_path)
         self.listener = tf.TransformListener()
 
         self.state = TrafficLight.UNKNOWN
@@ -72,7 +76,8 @@ class TLDetector(object):
             # if index == 753:
             #     state = self.lights[0].state
 
-            rospy.loginfo("Next traffic light wp index={}, state={}".format(index, state))
+            # do not log because this information can be found in the topic
+            # rospy.loginfo("Next traffic light wp index={}, state={}".format(index, state))
 
             # Publish index of upcoming traffic light if its status is red or yellow
             if state == TrafficLight.GREEN or state == TrafficLight.UNKNOWN:
@@ -85,12 +90,10 @@ class TLDetector(object):
         self.pose = msg
 
     def waypoints_cb(self, waypoints):
-        # TODO: Unsubscribe?
         if self.waypoints is None:
             self.waypoints = waypoints
 
     def traffic_cb(self, msg):
-        # TODO Unsubscribe?
         self.lights = msg.lights
 
     def image_cb(self, msg):
@@ -110,7 +113,7 @@ class TLDetector(object):
 
             # TODO use light location to zoom in on traffic light in image
             if self.lights is not None:
-                print('Simulator Light State {}'.format(self.lights[0].state))
+                rospy.logdebug('Simulator Light State {}'.format(self.lights[0].state))
 
             new_state = np.uint8(self.light_classifier.get_classification(cv_image))
 
@@ -120,8 +123,8 @@ class TLDetector(object):
 
             modal_value = np.argmax(np.bincount(self.last_state_array))
 
-            rospy.logerr("Predicted: {}; Modalwert: {}; Last State Array {}".format(new_state, modal_value,
-                                                                                    self.last_state_array))
+            rospy.loginfo("Predicted: {}; Modalwert: {}; Last State Array {}".format(new_state, modal_value,
+                                                                                     self.last_state_array))
 
             return modal_value
 

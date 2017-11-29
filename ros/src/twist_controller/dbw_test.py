@@ -10,7 +10,7 @@ from dbw_mkz_msgs.msg import ThrottleCmd, SteeringCmd, BrakeCmd, SteeringReport
 
 '''
 You can use this file to test your DBW code against a bag recorded with a reference implementation.
-The bag can be found in `styx/data` folder.
+The bag can be found at https://drive.google.com/open?id=0B2_h37bMVw3iT0ZEdlF4N01QbHc.
 
 This file will produce 3 csv files which you can process to figure out how your DBW node is
 performing on various commands.
@@ -75,29 +75,36 @@ class DBWTestNode(object):
 
     def steer_cb(self, msg):
         self.steer = msg.steering_wheel_angle_cmd
+        rospy.logdebug("Issued steering cmd: {}".format(msg))
+
 
     def throttle_cb(self, msg):
         self.throttle = msg.pedal_cmd
+        rospy.logdebug("Issued throttle cmd: {}".format(msg))
 
     def brake_cb(self, msg):
         self.brake = msg.pedal_cmd
+        rospy.logdebug("Issued brake cmd: {}".format(msg))
 
     def actual_steer_cb(self, msg):
         if self.dbw_enabled and self.steer is not None:
             self.steer_data.append({'actual': msg.steering_wheel_angle_cmd,
                                     'proposed': self.steer})
+            rospy.logwarn("Issued steer: {}, correct steer: {}".format(self.steer, msg.steering_wheel_angle_cmd))
             self.steer = None
 
     def actual_throttle_cb(self, msg):
         if self.dbw_enabled and self.throttle is not None:
             self.throttle_data.append({'actual': msg.pedal_cmd,
                                        'proposed': self.throttle})
+            rospy.logwarn("Issued throttle: {}, correct throttle: {}".format(self.throttle, msg.pedal_cmd))
             self.throttle = None
 
     def actual_brake_cb(self, msg):
         if self.dbw_enabled and self.brake is not None:
             self.brake_data.append({'actual': msg.pedal_cmd,
                                     'proposed': self.brake})
+            rospy.logwarn("Issued brake: {}, correct brake: {}".format(self.brake, msg.pedal_cmd))
             self.brake = None
 
 

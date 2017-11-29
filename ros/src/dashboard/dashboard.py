@@ -85,11 +85,9 @@ class Dashboard(object):
 
         # subscribe to traffic light and obstacle topics
         rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self._set_traffic_lights)
-        # rospy.Subscriber('/traffic_waypoint', Lane, self._set_traffic_waypoints)
-        # rospy.Subscriber('/obstacle_waypoint', Lane, self._set_obstacle_waypoints)
 
         # is Drive-By-Wire enabled?
-        rospy.Subscriber('/dbw_enabled', Bool, self._set_dbw_enabled)
+        rospy.Subscriber('/vehicle/dbw_enabled', Bool, self._set_dbw_enabled)
 
         # subscribe to camera image
         rospy.Subscriber('/image_color', Image, self._set_image)
@@ -422,7 +420,7 @@ class Dashboard(object):
         else:
             time = rospy.Time.now().to_nsec()
             cv_image = self._bridge.imgmsg_to_cv2(self._image, "bgr8")
-            cv2.imwrite("../../../training_data/img_time{:21d}_state{:1d}.png".format(time, state), cv_image)
+            cv2.imwrite("../../../training_data/img_time{:20d}_state{:1d}.png".format(time, state), cv_image)
 
     @staticmethod
     def close():
@@ -443,22 +441,13 @@ class Dashboard(object):
         setter for base points and invokes drawing of the track image
         :param lane:
         """
-        if self._base_waypoints is None:
-            self._base_waypoints = lane.waypoints
-            # draws track image right after setting waypoints
-            # this way it only has to be done once
-            self._draw_track()
+        self._base_waypoints = lane.waypoints
+        # draws track image right after setting waypoints
+        # this way it only has to be done once
+        self._draw_track()
 
     def _set_final_waypoints(self, lane):
         self._final_waypoints = lane.waypoints
-
-    def _set_traffic_waypoints(self, msg):
-        # TODO: Callback for /traffic_waypoint message. Implement
-        pass
-
-    def _set_obstacle_waypoints(self, msg):
-        # TODO: Callback for /obstacle_waypoint message. We will implement it later
-        pass
 
     def _set_dbw_enabled(self, msg):
         self._dbw_enabled = msg
